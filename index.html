@@ -53,7 +53,8 @@ const S={user:null,view:"dash",tab:"in",open:null,
 users:[{id:"m1",name:"Maria Lopez",email:"maria@example.com",role:"member",unit:"12 Oak Ln"},{id:"m2",name:"James Chen",email:"james@example.com",role:"member",unit:"27 Cedar Ct"},{id:"d1",name:"Priya Nair",email:"priya@example.com",role:"director",unit:"4 Birch Way",title:"Board President"},{id:"a1",name:"Sam Rivera",email:"sam@example.com",role:"admin",unit:"Management office",title:"Property manager"}],
 charges:[{id:1,uid:"m1",desc:"Q4 2026 assessment",amt:450,type:"due",paid:false},{id:2,uid:"m1",desc:"Trash bin left out (Oct 28)",amt:50,type:"fine",paid:false},{id:3,uid:"m2",desc:"Q4 2026 assessment",amt:450,type:"due",paid:false},{id:4,uid:"m2",desc:"Q3 2026 assessment",amt:450,type:"due",paid:true}],
 reqs:[{id:1,uid:"m1",type:"acc",title:"Replace front fence with cedar",body:"Replace 40 ft of white vinyl fence with 5 ft cedar privacy fence.",status:"Under review",log:[["Oct 30","Submitted by Maria Lopez"],["Nov 2","Moved to Under review: Priya Nair"]]},{id:2,uid:"m2",type:"complaint",title:"Barking dog, Unit 31",body:"Dog barks most nights after 10 pm.",status:"Received",log:[["Nov 4","Submitted by James Chen"]]}],
-invites:[{code:"OAK-7421",email:"",status:"Open"}],sent:[]};
+invites:[{code:"OAK-7421",email:"",status:"Open"}],sent:[],
+docs:[{id:1,title:"CC&Rs and Bylaws",cat:"Governing",group:"owners",date:"Jan 5"},{id:2,title:"2026 Approved Budget",cat:"Financial",group:"owners",date:"Dec 12"},{id:3,title:"Annual Meeting Minutes 2025",cat:"Minutes",group:"owners",date:"Nov 20"},{id:4,title:"Board Meeting Minutes, Oct 2026",cat:"Minutes",group:"board",date:"Oct 28"},{id:5,title:"Reserve Study (draft)",cat:"Financial",group:"board",date:"Oct 15"},{id:6,title:"Vendor Contracts 2027",cat:"Contracts",group:"board",date:"Sep 30"},{id:7,title:"Delinquency and Collections Report",cat:"Financial",group:"admin",date:"Nov 1"}]};
 const $=s=>document.getElementById(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>"$"+n.toFixed(2);
@@ -61,7 +62,7 @@ const staff=()=>S.user&&S.user.role!=="member";
 const uname=id=>(S.users.find(u=>u.id===id)||{}).name||"";
 function toast(t){const e=document.createElement("div");e.className="toast";e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2800)}
 function go(v,o){S.view=v;S.open=o||null;render()}
-function nav(){const r=[["dash","Home"],["pay","Pay"],["req","Requests"],["new","New request"]];
+function nav(){const r=[["dash","Home"],["pay","Pay"],["req","Requests"],["new","New request"],["docs","Documents"]];
  if(staff())r.push(["invite","Invites"],["bcast","Broadcast"],["mem","Members"]);
  if(S.user.role==="admin")r.push(["ledger","Charges"]);return r}
 function render(){$("app").innerHTML=S.user?shell():auth();tot();window.scrollTo(0,0)}
@@ -102,6 +103,8 @@ new(){return `<h2>New request</h2><div class="card"><label>Type</label><select i
 detail(){const r=S.reqs.find(x=>x.id===S.open),st=WF[r.type],i=r.type==="acc"?(/Approved|Denied/.test(r.status)?2:r.status==="Submitted"?0:1):st.indexOf(r.status);
  return `<p><button class="s" onclick="go('req')">Back</button></p><div class="card"><div class="row"><h2 style="margin:0">${esc(r.title)}</h2>${badge(r)}</div><div class="mut">${TN[r.type]} from ${uname(r.uid)}</div><div class="steps">${st.map((s,k)=>`<i class="${k<=i?"d":""}" title="${s}"></i>`).join("")}</div><div class="mut">${st.join(" → ")}</div><p>${esc(r.body)}</p>
  <h3>History</h3><div class="log">${r.log.map(l=>`<div><b>${l[0]}</b> ${esc(l[1])}</div>`).join("")}</div>${acts(r)}</div>`},
+docs(){const u=S.user,can=d=>d.group==="owners"||(d.group==="board"&&staff())||(d.group==="admin"&&u.role==="admin"),L={owners:"All owners",board:"Board only",admin:"Management only"},list=S.docs.filter(can);
+ return `<h2>Documents</h2><div class="card"><div class="mut">Signed in as ${u.role}. ${list.length} document${list.length===1?"":"s"} available to your access group.</div>${list.map(d=>`<div class="item row"><div><b>${esc(d.title)}</b><div class="mut">${d.cat} · ${d.date}</div></div><div><span class="tag ${d.group==="owners"?"":"wa"}">${L[d.group]}</span> <button class="s" onclick="openDoc(${d.id})">Open</button></div></div>`).join("")}</div>`+(staff()?`<div class="card"><h3>Add a document</h3><label>Title</label><input id="dt"><label>Category</label><select id="dc"><option>Governing</option><option>Financial</option><option>Minutes</option><option>Contracts</option><option>Forms</option></select><label>Who can see it</label><select id="dg"><option value="owners">All owners</option><option value="board">Board only</option>${u.role==="admin"?`<option value="admin">Management only</option>`:""}</select><p><button class="p" onclick="addDoc()">Add document (simulated upload)</button></p></div>`:"")},
 invite(){return `<h2>Invite members</h2><div class="card"><h3>Invite by email</h3><input id="ie" type="email" placeholder="neighbor@example.com"><p><button class="p" onclick="inv(1)">Send invite email</button></p>
  <h3>Or create a registration code</h3><p><button class="s" onclick="inv(0)">Generate code</button></p></div>
  <div class="card"><h3>Invitations</h3>${S.invites.map(i=>`<div class="item row"><span><b>${i.code}</b> <span class="mut">${esc(i.email||"code only")}</span></span><span class="tag ${i.status==="Used"?"ok":"wa"}">${i.status}</span></div>`).join("")}</div>`},
@@ -126,6 +129,8 @@ function inv(byEmail){const e=byEmail?$("ie").value.trim():"";if(byEmail&&!/.+@.
 function bc(){const s=$("bs").value.trim(),m=$("bm").value.trim(),a=$("ba").value;if(!s||!m)return toast("Add a subject and message.");
  const n=a==="Directors only"?S.users.filter(u=>u.role==="director").length:a.startsWith("Members with")?new Set(S.charges.filter(c=>!c.paid).map(c=>c.uid)).size:S.users.filter(u=>u.role==="member").length;
  S.sent.unshift({subj:s,body:m,aud:a.toLowerCase(),n,when:d0()});render();toast("Sent to "+n+" recipient"+(n===1?"":"s")+" (simulated).")}
+function openDoc(id){toast("Opening “"+S.docs.find(x=>x.id===id).title+"” (demo: no real file attached)")}
+function addDoc(){const t=$("dt").value.trim();if(!t)return toast("Enter a document title.");S.docs.unshift({id:S.docs.length+1,title:t,cat:$("dc").value,group:$("dg").value,date:d0()});render();toast("Document added. Visible to "+({owners:"all owners",board:"the board only",admin:"management only"})[S.docs[0].group]+".")}
 function role(id,r){S.users.find(u=>u.id===id).role=r;toast("Role changed to "+r+". Access updates at next sign-in.")}
 function addCh(){const d=$("ld").value.trim(),a=parseFloat($("la").value);if(!d||!(a>0))return toast("Add a description and amount.");
  S.charges.push({id:S.charges.length+1,uid:$("lu").value,desc:d,amt:a,type:$("lt").value,paid:false});render();toast("Charge added. Member notified (simulated).")}
